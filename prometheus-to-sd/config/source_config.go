@@ -24,7 +24,7 @@ import (
 
 	"github.com/golang/glog"
 
-	"github.com/GoogleCloudPlatform/k8s-stackdriver/prometheus-to-sd/flags"
+	"github.com/fabzo/k8s-stackdriver/prometheus-to-sd/flags"
 )
 
 // SourceConfig contains data specific for scraping one component.

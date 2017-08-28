@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/GoogleCloudPlatform/k8s-stackdriver/prometheus-to-sd/flags"
+	"github.com/fabzo/k8s-stackdriver/prometheus-to-sd/flags"
 )
 
 func TestNewSourceConfig(t *testing.T) {

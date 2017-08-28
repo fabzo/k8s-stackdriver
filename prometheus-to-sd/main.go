@@ -30,9 +30,9 @@ import (
 	"golang.org/x/oauth2/google"
 	v3 "google.golang.org/api/monitoring/v3"
 
-	"github.com/GoogleCloudPlatform/k8s-stackdriver/prometheus-to-sd/config"
-	"github.com/GoogleCloudPlatform/k8s-stackdriver/prometheus-to-sd/flags"
-	"github.com/GoogleCloudPlatform/k8s-stackdriver/prometheus-to-sd/translator"
+	"github.com/fabzo/k8s-stackdriver/prometheus-to-sd/config"
+	"github.com/fabzo/k8s-stackdriver/prometheus-to-sd/flags"
+	"github.com/fabzo/k8s-stackdriver/prometheus-to-sd/translator"
 )
 
 var (
