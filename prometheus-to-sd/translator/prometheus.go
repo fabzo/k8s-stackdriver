@@ -26,9 +26,12 @@ import (
 	"github.com/prometheus/common/expfmt"
 )
 
+const matchParameter = "match[]="
+
 // GetPrometheusMetrics scrapes metrics from the given host and port using /metrics handler.
-func GetPrometheusMetrics(host string, port uint) (map[string]*dto.MetricFamily, error) {
-	url := fmt.Sprintf("http://%s:%d/metrics", host, port)
+func GetPrometheusMetrics(host string, port uint, path string, match []string) (map[string]*dto.MetricFamily, error) {
+	url := fmt.Sprintf("http://%s:%d/%s", host, port, path) + createMatchQueryString(match)
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("request %s failed: %v", url, err)
@@ -48,4 +51,12 @@ func GetPrometheusMetrics(host string, port uint) (map[string]*dto.MetricFamily,
 
 	parser := &expfmt.TextParser{}
 	return parser.TextToMetricFamilies(strings.NewReader(data))
+}
+
+func createMatchQueryString(match []string) string {
+	if match == nil || len(match) <= 0 {
+		return ""
+	}
+
+	return "?" + matchParameter + strings.Join(match, "&" + matchParameter)
 }

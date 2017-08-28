@@ -30,30 +30,36 @@ func TestNewSourceConfig(t *testing.T) {
 		component   string
 		host        string
 		port        string
+		path        string
+		match       []string
 		whitelisted string
 		output      SourceConfig
 	}{
-		{"testComponent", "localhost", "1234", "a,b,c,d",
+		{"testComponent", "localhost", "1234", "", []string{}, "a,b,c,d",
 			SourceConfig{
 				Component:   "testComponent",
 				Host:        "localhost",
 				Port:        1234,
+				Path:        "/metrics",
+				Match:       []string{},
 				Whitelisted: []string{"a", "b", "c", "d"},
 			},
 		},
 
-		{"testComponent", "localhost", "1234", "",
+		{"testComponent", "localhost", "1234", "/federate", []string{"{job=\"prometheus\"}", "{__name__=~\"job:.*\"}"}, "",
 			SourceConfig{
 				Component:   "testComponent",
 				Host:        "localhost",
 				Port:        1234,
+				Path:        "/federate",
+				Match:       []string{"{job=\"prometheus\"}", "{__name__=~\"job:.*\"}"},
 				Whitelisted: nil,
 			},
 		},
 	}
 
 	for _, c := range correct {
-		res, err := newSourceConfig(c.component, c.host, c.port, c.whitelisted)
+		res, err := newSourceConfig(c.component, c.host, c.port, c.path, c.match, c.whitelisted)
 		if assert.NoError(t, err) {
 			assert.Equal(t, c.output, *res)
 		}
@@ -61,29 +67,55 @@ func TestNewSourceConfig(t *testing.T) {
 }
 
 func TestParseSourceConfig(t *testing.T) {
-	correct := struct {
+	correct := [...]struct {
 		in     flags.Uri
 		output SourceConfig
 	}{
-		flags.Uri{
-			Key: "testComponent",
-			Val: url.URL{
-				Scheme:   "http",
-				Host:     "hostname:1234",
-				RawQuery: "whitelisted=a,b,c,d",
+		{
+			flags.Uri{
+				Key: "testComponent",
+				Val: url.URL{
+					Scheme:   "http",
+					Host:     "hostname:1234",
+					Path:     "/federate",
+					RawQuery: "whitelisted=a,b,c,d&match[]={job=\"prometheus\"}&match[]={__name__=~\"job:.*\"}",
+				},
+			},
+			SourceConfig{
+				Component:   "testComponent",
+				Host:        "hostname",
+				Port:        1234,
+				Path:        "/federate",
+				Match:       []string{"{job=\"prometheus\"}", "{__name__=~\"job:.*\"}"},
+				Whitelisted: []string{"a", "b", "c", "d"},
 			},
 		},
-		SourceConfig{
-			Component:   "testComponent",
-			Host:        "hostname",
-			Port:        1234,
-			Whitelisted: []string{"a", "b", "c", "d"},
+		{
+			flags.Uri{
+				Key: "testMetricsPathFallback",
+				Val: url.URL{
+					Scheme:   "http",
+					Host:     "hostname:1234",
+					Path:     "",
+					RawQuery: "whitelisted=a,b,c,d",
+				},
+			},
+			SourceConfig{
+				Component:   "testMetricsPathFallback",
+				Host:        "hostname",
+				Port:        1234,
+				Path:        "/metrics",
+				Match:       nil,
+				Whitelisted: []string{"a", "b", "c", "d"},
+			},
 		},
 	}
 
-	res, err := parseSourceConfig(correct.in)
-	if assert.NoError(t, err) {
-		assert.Equal(t, correct.output, *res)
+	for _, c := range correct {
+		res, err := parseSourceConfig(c.in)
+		if assert.NoError(t, err) {
+			assert.Equal(t, c.output, *res)
+		}
 	}
 
 	incorrect := [...]flags.Uri{
@@ -106,7 +138,7 @@ func TestParseSourceConfig(t *testing.T) {
 	}
 
 	for _, c := range incorrect {
-		_, err = parseSourceConfig(c)
+		_, err := parseSourceConfig(c)
 		assert.Error(t, err)
 	}
 }
