@@ -38,6 +38,7 @@ var supportedMetricTypes = map[dto.MetricType]bool{
 	dto.MetricType_COUNTER:   true,
 	dto.MetricType_GAUGE:     true,
 	dto.MetricType_HISTOGRAM: true,
+	dto.MetricType_UNTYPED:   true,
 }
 
 const falseValueEpsilon = 0.001
@@ -88,7 +89,9 @@ func getStartTime(metrics map[string]*dto.MetricFamily) time.Time {
 		startTime = time.Unix(int64(*startSec), 0)
 		glog.V(4).Infof("Monitored process start time: %v", startTime)
 	} else {
-		glog.Warningf("Metric %s invalid or not defined. Using %v instead. Cumulative metrics might be inaccurate.", processStartTimeMetric, startTime)
+		if family.GetType() != dto.MetricType_UNTYPED {
+			glog.Warningf("Metric %s invalid or not defined. Using %v instead. Cumulative metrics might be inaccurate.", processStartTimeMetric, startTime)
+		}
 	}
 	return startTime
 }
@@ -173,6 +176,8 @@ func translateOne(config *config.CommonConfig,
 func setValue(mType dto.MetricType, valueType string, metric *dto.Metric, point *v3.Point) {
 	if mType == dto.MetricType_GAUGE {
 		setValueBaseOnSimpleType(metric.GetGauge().GetValue(), valueType, point)
+	} else if mType == dto.MetricType_UNTYPED {
+		setValueBaseOnSimpleType(metric.GetUntyped().GetValue(), valueType, point)
 	} else if mType == dto.MetricType_HISTOGRAM {
 		point.Value.DistributionValue = convertToDistributionValue(metric.GetHistogram())
 		point.ForceSendFields = append(point.ForceSendFields, "DistributionValue")
